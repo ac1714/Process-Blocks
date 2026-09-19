@@ -1,0 +1,6 @@
+{
+  "name": "Block Studio",
+  "description": "Build documents from copy-ready HTML blocks with a numbered block stack.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
