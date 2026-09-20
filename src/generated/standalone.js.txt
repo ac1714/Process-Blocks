@@ -20242,6 +20242,11 @@ function deriveAccentsByHarmony(primary, harmony = "complementary") {
 		default: return [hslToHex(h + .5, sat, lum), hslToHex(h + .28, sat, lum * .92)];
 	}
 }
+/** Adjust lightness of a hex color by a delta (-1 to 1) */
+function adjustLightness(hex, delta) {
+	const [h, s, l] = rgbToHsl(normalizeHex(hex));
+	return hslToHex(h, s, Math.max(.08, Math.min(.92, l + delta)));
+}
 /** Default secondary / tertiary accents derived from the primary by hue rotation. */
 function deriveAccents(primary) {
 	return deriveAccentsByHarmony(primary, "complementary");
@@ -20302,7 +20307,6 @@ var BRAND_NAMES = [
 	"Workato"
 ];
 var GILBARBARA = "https://cdn.jsdelivr.net/gh/gilbarbara/logos@main/logos";
-var SIMPLE_ICONS = "https://cdn.jsdelivr.net/npm/simple-icons/icons";
 var FULL = {
 	x: 0,
 	y: 0,
@@ -20353,7 +20357,7 @@ var SPECS = {
 		height: 19
 	},
 	"Google Sheets": {
-		src: `${SIMPLE_ICONS}/googlesheets.svg`,
+		src: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%230F9D58%22%20d%3D%22M14.727%206.727H14V0H4.91c-.905%200-1.637.732-1.637%201.636v20.728C3.273%2023.268%204.005%2024%204.91%2024h14.182c.904%200%201.636-.732%201.636-1.636V6.727h-6zM9.273%2019.636H6.545v-1.636h2.728v1.636zm0-3.272H6.545v-1.637h2.728v1.637zm0-3.273H6.545v-1.636h2.728v1.636zm8.182%206.545h-5.728v-1.636h5.728v1.636zm0-3.272h-5.728v-1.637h5.728v1.637zm0-3.273h-5.728v-1.636h5.728v1.636z%22%2F%3E%3Cpath%20fill%3D%22%2334A853%22%20d%3D%22M14.727%200v6.727h6.001z%22%2F%3E%3C%2Fsvg%3E",
 		vb: [24, 24],
 		trim: {
 			x: .1375,
@@ -23437,7 +23441,7 @@ function ColorControl({ colors, onChange, darkBg = DEFAULT_DARK_BG, onDarkBgChan
 		"Accent 4"
 	];
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-		className: "space-y-4",
+		className: "space-y-4 overflow-visible",
 		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "space-y-1.5",
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -23478,7 +23482,7 @@ function ColorControl({ colors, onChange, darkBg = DEFAULT_DARK_BG, onDarkBgChan
 				})
 			})]
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-			className: "space-y-2",
+			className: cn("space-y-2", activeEditingIndex !== null && "pb-36"),
 			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "flex items-center justify-between",
 				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
@@ -23507,6 +23511,7 @@ function ColorControl({ colors, onChange, darkBg = DEFAULT_DARK_BG, onDarkBgChan
 					const isEditing = activeEditingIndex === index;
 					return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 						className: "relative flex-1",
+						style: { overflow: "visible" },
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
 							type: "button",
 							onClick: () => setActiveEditingIndex(isEditing ? null : index),
@@ -23514,7 +23519,7 @@ function ColorControl({ colors, onChange, darkBg = DEFAULT_DARK_BG, onDarkBgChan
 							className: cn("flex h-9 w-full items-center justify-center rounded-sm border transition-all", isEditing ? "border-foreground ring-2 ring-foreground/20 scale-105" : "border-border hover:border-foreground/40"),
 							style: { backgroundColor: color }
 						}), isEditing && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "absolute top-full left-0 z-30 mt-1 w-48 rounded-sm border border-border bg-popover p-2 shadow-lg",
+							className: cn("absolute top-full z-50 mt-1 w-48 rounded-sm border border-border bg-popover p-2 shadow-lg", index >= 2 ? "right-0" : "left-0"),
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 								className: "flex items-center justify-between pb-1.5 text-xs font-semibold text-muted-foreground",
 								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { children: ["Pick ", roleName] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
@@ -23536,7 +23541,7 @@ function ColorControl({ colors, onChange, darkBg = DEFAULT_DARK_BG, onDarkBgChan
 										},
 										className: "absolute inset-0 size-full cursor-pointer opacity-0"
 									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "size-full",
+										className: "block size-full",
 										style: { backgroundColor: color }
 									})]
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
@@ -23595,7 +23600,7 @@ function ColorControl({ colors, onChange, darkBg = DEFAULT_DARK_BG, onDarkBgChan
 										onChange: (e) => onDarkBgChange(e.target.value),
 										className: "absolute inset-0 size-full cursor-pointer opacity-0"
 									}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "size-full",
+										className: "block size-full",
 										style: { backgroundColor: darkBg }
 									})]
 								}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
@@ -23656,7 +23661,7 @@ function StudioPanel({ view, categories, onCategory, categoryCounts, activeCateg
 	(0, import_react.useEffect)(() => {
 		setPanelTabOverride(null);
 	}, [view, selectedItemUid]);
-	const activeTab = panelTabOverride ?? (view === "library" ? "categories" : view === "builder" ? "block" : "global");
+	const activeTab = panelTabOverride ?? (view === "library" ? "categories" : view === "builder" ? "block" : "preview-blocks");
 	const selectedItem = items.find((it) => it.uid === selectedItemUid);
 	async function handleCopyBlock(item) {
 		if (await copyText(itemHtml(item, theme, customBlocks, savedFragments))) {
@@ -23687,7 +23692,7 @@ function StudioPanel({ view, categories, onCategory, categoryCounts, activeCateg
 							type: "button",
 							onClick: () => setPanelTabOverride("block"),
 							className: cn("flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors", activeTab === "block" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"),
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Block" })]
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Blocks" })]
 						}),
 						view === "library" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
@@ -23695,6 +23700,17 @@ function StudioPanel({ view, categories, onCategory, categoryCounts, activeCateg
 							className: cn("flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors", activeTab === "categories" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"),
 							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(LayoutGrid, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Categories" })]
 						}),
+						view === "preview" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+							type: "button",
+							onClick: () => setPanelTabOverride("preview-blocks"),
+							className: cn("flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors", activeTab === "preview-blocks" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"),
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SlidersVertical, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Blocks" })]
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+							type: "button",
+							onClick: () => setPanelTabOverride("preview-theme"),
+							className: cn("flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors", activeTab === "preview-theme" ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:text-foreground"),
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Paintbrush, { className: "size-4" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Theme" })]
+						})] }),
 						view !== "preview" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 							type: "button",
 							onClick: () => setPanelTabOverride("global"),
@@ -23707,21 +23723,6 @@ function StudioPanel({ view, categories, onCategory, categoryCounts, activeCateg
 			view === "builder" && activeTab === "block" ? selectedItem ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "space-y-3.5",
 				children: [
-					/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex items-center justify-between",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-							className: "text-xs font-semibold tracking-wider text-muted-foreground uppercase",
-							children: "Selected Block"
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h3", {
-							className: "text-sm font-semibold truncate max-w-[180px]",
-							children: blockLabel(selectedItem.snippetId, customBlocks, savedFragments)
-						})] }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-							type: "button",
-							onClick: () => onSelectItemUid?.(null),
-							className: "text-sm text-muted-foreground hover:text-foreground",
-							children: "Deselect"
-						})]
-					}),
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 						className: "space-y-3",
 						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ColorControl, {
@@ -23881,9 +23882,9 @@ function StudioPanel({ view, categories, onCategory, categoryCounts, activeCateg
 						})]
 					}, c))
 				})
-			}) : view === "preview" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			}) : view === "preview" && activeTab === "preview-blocks" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 				className: "space-y-4",
-				children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Section, {
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Section, {
 					label: "Copy Blocks",
 					children: [onCopyAll && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 						type: "button",
@@ -23914,47 +23915,47 @@ function StudioPanel({ view, categories, onCategory, categoryCounts, activeCateg
 							}, item.uid);
 						})
 					})]
-				}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Section, {
-					label: "Global Styles",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "grid gap-3 pt-1",
-						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "grid gap-1.5",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-xs font-semibold tracking-wider text-muted-foreground uppercase",
-								children: "Font"
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								className: "grid grid-cols-2 gap-1.5",
-								children: FONT_PRESETS.map((font) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									type: "button",
-									onClick: () => onThemeChange({
-										...theme,
-										fontStack: font.stack
-									}),
-									className: cn("rounded-sm border px-2 py-1.5 text-xs font-medium", theme.fontStack === font.stack ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-accent"),
-									children: font.name
-								}, font.name))
-							})]
-						}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-							className: "grid gap-1.5",
-							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "text-xs font-semibold tracking-wider text-muted-foreground uppercase",
-								children: "Density"
-							}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-								className: "grid grid-cols-2 gap-1.5",
-								children: ["compact", "comfortable"].map((density) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-									type: "button",
-									onClick: () => onThemeChange({
-										...theme,
-										density
-									}),
-									className: cn("rounded-sm border px-3 py-1.5 text-sm font-medium capitalize", theme.density === density ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-accent"),
-									children: density
-								}, density))
-							})]
+				})
+			}) : view === "preview" && activeTab === "preview-theme" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+				className: "space-y-4",
+				children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: "grid gap-3 pt-1",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "grid gap-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs font-semibold tracking-wider text-muted-foreground uppercase",
+							children: "Font"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "grid grid-cols-2 gap-1.5",
+							children: FONT_PRESETS.map((font) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								type: "button",
+								onClick: () => onThemeChange({
+									...theme,
+									fontStack: font.stack
+								}),
+								className: cn("rounded-sm border px-3 py-2 text-sm font-medium", theme.fontStack === font.stack ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-accent"),
+								children: font.name
+							}, font.name))
 						})]
-					})
-				})]
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+						className: "grid gap-1.5",
+						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "text-xs font-semibold tracking-wider text-muted-foreground uppercase",
+							children: "Density"
+						}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+							className: "grid grid-cols-2 gap-1.5",
+							children: ["compact", "comfortable"].map((density) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+								type: "button",
+								onClick: () => onThemeChange({
+									...theme,
+									density
+								}),
+								className: cn("rounded-sm border px-3 py-2 text-sm font-medium capitalize", theme.density === density ? "border-foreground bg-foreground text-background" : "border-border bg-card hover:bg-accent"),
+								children: density
+							}, density))
+						})]
+					})]
+				})
 			}) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: "space-y-4 pt-1",
 				children: [

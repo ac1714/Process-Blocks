@@ -1629,6 +1629,10 @@
     overflow: hidden;
   }
 
+  .overflow-visible {
+    overflow: visible;
+  }
+
   .overflow-x-auto {
     overflow-x: auto;
   }
@@ -2362,6 +2366,10 @@
 
   .pb-4 {
     padding-bottom: calc(var(--spacing) * 4);
+  }
+
+  .pb-36 {
+    padding-bottom: calc(var(--spacing) * 36);
   }
 
   .pl-2 {
