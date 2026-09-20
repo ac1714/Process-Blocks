@@ -21,11 +21,22 @@ import {
 import { EditablePreview } from "@/components/EditablePreview";
 import { copyText } from "@/lib/copy";
 import { PRESET_COLORS, deriveAccents } from "@/lib/snippet-colors";
-import { blockLabel, itemHtml, itemHtmlWithRef, type BuilderItem } from "@/lib/render";
+import {
+  blockLabel,
+  itemBaseHtml,
+  itemHtml,
+  itemHtmlWithRef,
+  type BuilderItem,
+} from "@/lib/render";
 import type { Op } from "@/lib/html-ops";
 import type { CustomBlock } from "@/lib/custom-blocks";
 import type { Theme } from "@/lib/theme";
-import type { BlockBackground, BlockBorder, BlockShell } from "@/lib/block-appearance";
+import {
+  getApplicableAppearanceOptions,
+  type BlockBackground,
+  type BlockBorder,
+  type BlockShell,
+} from "@/lib/block-appearance";
 import type { CollectionLayout } from "@/lib/collection-layout";
 import { moveCollectionItem, setRowColumnCount } from "@/lib/collection-layout";
 import { cn } from "@/lib/utils";
@@ -81,6 +92,8 @@ function BlockCard({
   moveDisabled,
   collapseVersion,
   collapseTo,
+  selected,
+  onSelect,
 }: {
   item: BuilderItem;
   theme: Theme;
@@ -96,6 +109,8 @@ function BlockCard({
   moveDisabled: Record<"up" | "down" | "left" | "right", boolean>;
   collapseVersion: number;
   collapseTo: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.uid,
@@ -103,6 +118,14 @@ function BlockCard({
   const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
   const html = itemHtml(item, theme, customBlocks, savedFragments);
+  const baseHtml = useMemo(
+    () => itemBaseHtml(item, theme, customBlocks, savedFragments),
+    [item, theme, customBlocks, savedFragments],
+  );
+  const applicable = useMemo(
+    () => getApplicableAppearanceOptions(baseHtml, item.colors?.[0] ?? theme.colors[0]),
+    [baseHtml, item.colors, theme.colors],
+  );
 
   useEffect(() => {
     if (collapseVersion > 0) setOpen(!collapseTo);
@@ -124,8 +147,12 @@ function BlockCard({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
+      onClick={() => onSelect?.()}
       className={cn(
-        "h-fit min-w-0 scroll-mt-24 rounded-sm border border-border bg-muted",
+        "h-fit min-w-0 scroll-mt-24 rounded-sm border transition-all",
+        selected
+          ? "border-foreground ring-2 ring-foreground/20 bg-muted/90 shadow-xs"
+          : "border-border bg-muted hover:border-border/80",
         isDragging && "z-10 opacity-30 border-dashed border-primary shadow-sm",
       )}
     >
@@ -194,90 +221,7 @@ function BlockCard({
       </div>
 
       {open ? (
-        <div className="space-y-3 border-t border-border p-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[13px] font-medium uppercase text-muted-foreground">Accent</span>
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color.hex}
-                title={color.name}
-                aria-label={`${color.name} accent for this block`}
-                onClick={() =>
-                  onChange({ ...item, colors: [color.hex, ...deriveAccents(color.hex)] })
-                }
-                className={cn(
-                  "size-5 rounded-sm border",
-                  item.colors?.[0] === color.hex ? "scale-110 border-foreground" : "border-border",
-                )}
-                style={{ backgroundColor: color.hex }}
-              />
-            ))}
-            <span className="ml-2 text-[13px] font-medium uppercase text-muted-foreground">
-              Columns
-            </span>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5, 6].map((count) => (
-                <button
-                  key={count}
-                  type="button"
-                  onClick={() => onColumnCountChange(count)}
-                  aria-label={`Use ${count} column${count === 1 ? "" : "s"} in this row`}
-                  className={cn(
-                    "size-7 rounded-sm border text-[13px]",
-                    columnCount === count
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background hover:bg-accent",
-                  )}
-                >
-                  {count}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => onChange({ ...item, ops: [] })}
-              disabled={!item.ops?.length}
-              className="ml-auto flex h-7 items-center gap-1 rounded-sm border border-border px-2 text-[13px] disabled:opacity-40"
-            >
-              <RotateCcw className="size-3" /> Reset edits
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-2">
-            <ChoiceGroup<BlockShell>
-              label="Shell"
-              value={appearance.shell ?? "original"}
-              options={[
-                { value: "original", label: "Original" },
-                { value: "card", label: "Card" },
-                { value: "accent", label: "Accent" },
-                { value: "plain", label: "Plain" },
-              ]}
-              onChange={(shell) => onChange({ ...item, appearance: { ...appearance, shell } })}
-            />
-            <ChoiceGroup<BlockBorder>
-              label="Border"
-              value={appearance.border ?? "original"}
-              options={[
-                { value: "original", label: "Original" },
-                { value: "hairline", label: "Line" },
-                { value: "bold", label: "Bold" },
-                { value: "none", label: "None" },
-              ]}
-              onChange={(border) => onChange({ ...item, appearance: { ...appearance, border } })}
-            />
-            <ChoiceGroup<BlockBackground>
-              label="Background"
-              value={appearance.background ?? "original"}
-              options={[
-                { value: "original", label: "Original" },
-                { value: "white", label: "White" },
-                { value: "tint", label: "Tint" },
-                { value: "dark", label: "Dark" },
-              ]}
-              onChange={(background) =>
-                onChange({ ...item, appearance: { ...appearance, background } })
-              }
-            />
-          </div>
+        <div className="space-y-2 border-t border-border p-2">
           <EditablePreview html={html} editable onOp={addOp} />
           <div className="flex items-start gap-3">
             <p className="flex-1 text-[13px] text-muted-foreground">Click any text to edit it.</p>
@@ -472,6 +416,8 @@ export function StackRows({
   collapseTo = true,
   activeId = null,
   onInsertForColumn,
+  selectedItemUid,
+  onSelectItem,
 }: {
   items: BuilderItem[];
   setItems: (next: BuilderItem[]) => void;
@@ -488,6 +434,8 @@ export function StackRows({
   collapseTo?: boolean;
   activeId?: string | null;
   onInsertForColumn?: (row: number, column: number) => void;
+  selectedItemUid?: string | null;
+  onSelectItem?: (uid: string | null) => void;
 }) {
   const byId = new Map(items.map((item) => [item.uid, item]));
   if (!items.length) return <>{renderInsert(0, 0, 0)}</>;
@@ -521,6 +469,8 @@ export function StackRows({
                           <div key={uid} className="grid min-w-0 gap-2">
                             <BlockCard
                               item={item}
+                              selected={selectedItemUid === uid}
+                              onSelect={() => onSelectItem?.(uid)}
                               theme={theme}
                               customBlocks={customBlocks}
                               savedFragments={savedFragments}

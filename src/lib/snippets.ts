@@ -659,13 +659,14 @@ ${cell("&#10003;", "Follow up")}
     description: "Labeled rule between sections.",
     render: (p) =>
       table(
-        "margin:32px 0 24px 0;",
+        `background-color:#ffffff;border:1px solid ${HAIRLINE};border-radius:${RADIUS};`,
         `  <tr>
-    <td style="${LABEL}color:${p.base};padding:0 0 10px 0;">Section label</td>
+    <td style="padding:24px 24px 0 24px;">
+      <div style="${LABEL}color:${p.base};margin:0 0 10px 0;">Section label</div>
+      <div style="border-top:1px solid ${HAIRLINE};font-size:0;line-height:0;height:0;">&nbsp;</div>
+    </td>
   </tr>
-  <tr>
-    <td style="border-top:1px solid ${HAIRLINE};font-size:0;line-height:0;">&nbsp;</td>
-  </tr>`,
+  <tr><td style="height:20px;font-size:0;line-height:0;">&nbsp;</td></tr>`,
       ),
   },
   {
@@ -675,8 +676,8 @@ ${cell("&#10003;", "Follow up")}
     description: "Short centered accent rule.",
     render: (p) =>
       table(
-        "margin:28px 0;",
-        `  <tr><td align="center" style="font-size:0;line-height:0;">
+        `background-color:#ffffff;border:1px solid ${HAIRLINE};border-radius:${RADIUS};`,
+        `  <tr><td align="center" style="padding:24px;font-size:0;line-height:0;">
     <div style="display:inline-block;width:56px;height:3px;border-radius:2px;background-color:${p.base};">&nbsp;</div>
   </td></tr>`,
       ),

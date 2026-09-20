@@ -6,6 +6,7 @@ export type Theme = {
   colors: string[];
   fontStack: string;
   density: Density;
+  darkBg?: string;
 };
 
 export const SYSTEM_FONT =
@@ -20,10 +21,21 @@ export const FONT_PRESETS: { name: string; stack: string }[] = [
   { name: "Georgia", stack: "Georgia, 'Times New Roman', serif" },
 ];
 
+export const DEFAULT_DARK_BG = "#0f172a";
+
+export const DARK_BG_PRESETS: { name: string; hex: string }[] = [
+  { name: "Slate", hex: "#0f172a" },
+  { name: "Navy", hex: "#0b192c" },
+  { name: "Charcoal", hex: "#18181b" },
+  { name: "Violet", hex: "#1e1035" },
+  { name: "Zinc", hex: "#09090b" },
+];
+
 export const DEFAULT_THEME: Theme = {
   colors: ["#2563eb", ...deriveAccents("#2563eb")],
   fontStack: SYSTEM_FONT,
   density: "comfortable",
+  darkBg: DEFAULT_DARK_BG,
 };
 
 /** Apply only user-selected theme settings; individual blocks retain their composition. */

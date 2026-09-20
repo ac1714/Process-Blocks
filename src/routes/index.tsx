@@ -7,20 +7,18 @@ import { downloadStandaloneHtml } from "@/lib/standalone-export";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Block Studio — Build Documents from Copy-Ready HTML Blocks" },
+      { title: "Block Studio" },
       {
         name: "description",
-        content:
-          "A block builder first: stack pre-built blocks and samples into a numbered document, edit any block, then copy clean HTML per block or export a standalone page.",
+        content: "Build documents from copy-ready HTML blocks with a numbered block stack.",
       },
       {
         property: "og:title",
-        content: "Block Studio — Build Documents from Copy-Ready HTML Blocks",
+        content: "Block Studio",
       },
       {
         property: "og:description",
-        content:
-          "Insert pre-built blocks and samples, arrange them in a numbered stack, and copy clean HTML or export a self-saving page.",
+        content: "Build documents from copy-ready HTML blocks with a numbered block stack.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

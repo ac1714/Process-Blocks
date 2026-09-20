@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite dev --host 0.0.0.0 --port 3000",
     "prebuild": "node scripts/build-standalone.mjs",
-    "build": "vite build",
+    "build": "vite build && mkdir -p dist && cp -r .output/public/* dist/",
     "build:standalone": "node scripts/build-standalone.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",

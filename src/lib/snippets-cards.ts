@@ -80,7 +80,7 @@ export const CARD_SNIPPETS: Snippet[] = [
       const row = (name: string, meta: string, last = false) =>
         `<tr><td style="padding:11px 0;${last ? "" : `border-bottom:1px solid ${SOFT};`}"><span style="font-size:16px;font-weight:700;color:${INK};">${name}</span><span style="font-size:14px;color:${BODY};"> &nbsp;${meta}</span></td><td width="24" align="right" style="color:${p.base};${last ? "" : `border-bottom:1px solid ${SOFT};`}">→</td></tr>`;
       return block(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;padding:16px;`,
         `${label("Resources", p.base)}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid ${INK};border-bottom:2px solid ${INK};">${row("Conversation guide", "PDF · 6 min")}${row("Approval matrix", "Reference · Updated")}${row("Practice scenario", "Exercise · 10 min", true)}</table>`,
       );
     },
@@ -92,7 +92,7 @@ export const CARD_SNIPPETS: Snippet[] = [
     description: "Two clearly differentiated choices.",
     render: (p) =>
       block(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;`,
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td width="50%" valign="top" style="padding:16px 18px;background:${p.base};color:${p.onBase};">${label("Option A", p.onBase)}<div style="font-size:18px;font-weight:700;">Resolve now</div><div style="font-size:15px;line-height:1.5;margin-top:6px;">Use when standard policy applies.</div></td><td width="50%" valign="top" style="padding:15px 18px;border:1px solid ${LINE};">${label("Option B", BODY)}${title("Request review")}${body("Use when an exception needs approval.")}</td></tr></table>`,
       ),
   },
@@ -103,7 +103,7 @@ export const CARD_SNIPPETS: Snippet[] = [
     description: "A change shown as two balanced cards.",
     render: (p) =>
       block(
-        `border:1px solid ${LINE};`,
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;`,
         `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td colspan="2" style="padding:10px 16px;background:${INK};color:#ffffff;font-size:13px;font-weight:700;letter-spacing:1px;">PROCESS CHANGE</td></tr><tr><td width="50%" valign="top" style="padding:16px;border-right:1px solid ${LINE};">${label("Before", BODY)}${title("Manual assignment")}${body("A coordinator routes each request.")}</td><td width="50%" valign="top" style="padding:16px;background:${p.bg};">${label("After", p.text)}${title("Rules-based routing")}${body("Qualified requests reach the right owner.")}</td></tr></table>`,
       ),
   },
@@ -116,7 +116,7 @@ export const CARD_SNIPPETS: Snippet[] = [
       const row = (name: string, copy: string, selected = false) =>
         `<tr><td width="120" style="padding:11px 14px;border-bottom:1px solid ${SOFT};${selected ? `border-left:4px solid ${p.base};background:${p.bg};` : ""}"><div style="font-size:16px;font-weight:700;color:${INK};">${name}</div></td><td style="padding:11px 14px;border-bottom:1px solid ${SOFT};font-size:15px;line-height:1.5;color:${BODY};">${copy}</td></tr>`;
       return block(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;padding:16px;`,
         `${label("Choose a route", p.base)}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid ${INK};">${row("Self-serve", "Familiar, low-risk work.")}${row("Guided", "New or complex work.", true)}${row("Escalated", "Urgent or high-risk work.")}</table>`,
       );
     },
@@ -128,7 +128,7 @@ export const CARD_SNIPPETS: Snippet[] = [
     description: "Three milestones with clear outcomes.",
     render: (p) =>
       block(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;padding:16px;`,
         `${label("Milestones", p.base)}<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${[
           ["1", "Prepare", "Gather the source."],
           ["2", "Complete", "Take the action."],

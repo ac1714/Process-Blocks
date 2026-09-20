@@ -85,12 +85,51 @@ function hslToHex(h: number, s: number, l: number): string {
   return toHex([conv(hue + 1 / 3) * 255, conv(hue) * 255, conv(hue - 1 / 3) * 255]);
 }
 
+/** Color harmony styles for accent generation */
+export type ColorHarmony =
+  "complementary" | "analogous" | "triadic" | "split" | "monochromatic" | "warm" | "cool";
+
+/** Generates accents based on chosen color harmony theory */
+export function deriveAccentsByHarmony(
+  primary: string,
+  harmony: ColorHarmony = "complementary",
+): [string, string] {
+  const [h, s, l] = rgbToHsl(normalizeHex(primary));
+  const sat = Math.max(0.32, Math.min(0.78, s || 0.5));
+  const lum = Math.max(0.28, Math.min(0.52, l));
+
+  switch (harmony) {
+    case "analogous":
+      return [hslToHex(h + 0.083, sat, lum), hslToHex(h - 0.083, sat, lum * 0.9)];
+    case "triadic":
+      return [hslToHex(h + 0.333, sat, lum), hslToHex(h + 0.666, sat, lum * 0.92)];
+    case "split":
+      return [hslToHex(h + 0.416, sat, lum), hslToHex(h + 0.583, sat, lum * 0.95)];
+    case "monochromatic":
+      return [
+        hslToHex(h, Math.max(0.2, sat * 0.72), Math.min(0.72, lum + 0.22)),
+        hslToHex(h, Math.min(0.9, sat * 1.18), Math.max(0.2, lum - 0.16)),
+      ];
+    case "warm":
+      return [hslToHex(0.085, 0.75, 0.44), hslToHex(0.03, 0.7, 0.46)];
+    case "cool":
+      return [hslToHex(0.52, 0.72, 0.4), hslToHex(0.64, 0.68, 0.46)];
+    case "complementary":
+    default:
+      return [hslToHex(h + 0.5, sat, lum), hslToHex(h + 0.28, sat, lum * 0.92)];
+  }
+}
+
+/** Adjust lightness of a hex color by a delta (-1 to 1) */
+export function adjustLightness(hex: string, delta: number): string {
+  const [h, s, l] = rgbToHsl(normalizeHex(hex));
+  const newL = Math.max(0.08, Math.min(0.92, l + delta));
+  return hslToHex(h, s, newL);
+}
+
 /** Default secondary / tertiary accents derived from the primary by hue rotation. */
 export function deriveAccents(primary: string): [string, string] {
-  const [h, s, l] = rgbToHsl(normalizeHex(primary));
-  const sat = Math.max(0.32, Math.min(0.72, s));
-  const lum = Math.max(0.3, Math.min(0.48, l));
-  return [hslToHex(h + 0.5, sat, lum), hslToHex(h + 0.28, sat, lum)];
+  return deriveAccentsByHarmony(primary, "complementary");
 }
 
 /** Full accent set: [primary, secondary, tertiary], filling gaps with derived defaults. */

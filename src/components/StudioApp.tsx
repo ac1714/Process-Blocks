@@ -14,12 +14,14 @@ import {
 import {
   Check,
   Copy,
+  Eye,
   Hammer,
   Library,
   Menu,
   PanelLeftOpen,
   Plus,
   Save,
+  Star,
   Wand2,
   X,
 } from "lucide-react";
@@ -46,6 +48,7 @@ import {
   baseHtml,
   blockHtmlWithRefs,
   collectionHtml,
+  itemHtml,
   nextRef,
   normalizeRefs,
   type BuilderItem,
@@ -55,6 +58,7 @@ import {
   insertCollectionItem,
   normalizeCollectionLayout,
   reorderCollectionItem,
+  setRowColumnCount,
   type CollectionLayout,
 } from "@/lib/collection-layout";
 import {
@@ -124,18 +128,22 @@ export function StudioApp({
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [selectedItemUid, setSelectedItemUid] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
-  const [view, setView] = useState<"builder" | "library">("builder");
-  const [preview, setPreview] = useState(false);
+  const [view, setView] = useState<"builder" | "library" | "preview">("builder");
   const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedBlockUid, setCopiedBlockUid] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [collapseVersion, setCollapseVersion] = useState(0);
 
   const scrollRef = useRef<HTMLElement | null>(null);
-  const scrollMemo = useRef<Record<string, number>>({ builder: 0, library: 0 });
+  const scrollMemo = useRef<Record<string, number>>({ builder: 0, library: 0, preview: 0 });
 
   useEffect(() => {
-    if (!items.length) setEditingTemplateId(null);
+    if (!items.length) {
+      setEditingTemplateId(null);
+      setSelectedItemUid(null);
+    }
   }, [items.length]);
 
   function applyState(p: Partial<Persisted>) {
@@ -262,37 +270,59 @@ export function StudioApp({
     return [...tpl, ...fragments, ...custom, ...stock];
   }, [customBlocks, savedFragments, templates]);
 
-  const visible = useMemo(() => {
-    return [...entries].sort(
-      (a, b) => Number(favorites.includes(b.id)) - Number(favorites.includes(a.id)),
-    );
+  const favoriteEntries = useMemo(() => {
+    return entries.filter((entry) => favorites.includes(entry.id));
   }, [entries, favorites]);
 
-  const categories = [
-    ...(templates.length || customBlocks.length || savedFragments.length ? ["My blocks"] : []),
-    ...CATEGORIES,
-  ];
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: entries.length };
-    for (const e of entries) counts[e.category] = (counts[e.category] ?? 0) + 1;
-    return counts;
+  const visible = useMemo(() => {
+    return entries;
   }, [entries]);
 
-  const groupedVisible = useMemo(
-    () =>
-      categories
-        .map((name) => ({ name, entries: visible.filter((entry) => entry.category === name) }))
-        .filter((group) => group.entries.length > 0),
-    [categories, visible],
+  const categories = useMemo(
+    () => [
+      "Favorites",
+      ...(templates.length || customBlocks.length || savedFragments.length ? ["My blocks"] : []),
+      ...CATEGORIES,
+    ],
+    [templates.length, customBlocks.length, savedFragments.length],
   );
 
-  function switchView(next: "builder" | "library") {
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      All: entries.length,
+      Favorites: favoriteEntries.length,
+    };
+    for (const e of entries) counts[e.category] = (counts[e.category] ?? 0) + 1;
+    return counts;
+  }, [entries, favoriteEntries.length]);
+
+  const groupedVisible = useMemo(() => {
+    const list: { name: string; entries: typeof entries }[] = [];
+
+    // Always include the Favorites category at the top of the library
+    list.push({ name: "Favorites", entries: favoriteEntries });
+
+    for (const name of categories) {
+      if (name === "Favorites") continue;
+      const catEntries = visible.filter((entry) => entry.category === name);
+      if (catEntries.length > 0) {
+        list.push({ name, entries: catEntries });
+      }
+    }
+
+    return list;
+  }, [categories, visible, favoriteEntries]);
+
+  function switchView(next: "builder" | "library" | "preview") {
     scrollMemo.current[view] = scrollRef.current?.scrollTop ?? 0;
     if (next === "library") {
       if (!activeCategory) setActiveCategory(groupedVisible[0]?.name ?? null);
-      // The library always shows blocks in their normal editable state.
-      setPreview(false);
+    }
+    if (next === "preview") {
+      setBuilderOpen(false);
+      setEditingBlock(null);
+      setEditingItemUid(null);
+      setInsertTarget(null);
     }
     setView(next);
     requestAnimationFrame(() => {
@@ -321,21 +351,6 @@ export function StudioApp({
       if (section && section.getBoundingClientRect().top <= top) current = group.name;
     }
     setActiveCategory(current ?? groupedVisible[0]?.name ?? null);
-  }
-
-  function togglePreview() {
-    const next = !preview;
-    setPreview(next);
-    // Preview always happens on the builder: turning it on collapses the block
-    // cards, turning it off expands them again.
-    if (view !== "builder") switchView("builder");
-    setCollapseVersion((version) => version + 1);
-    if (next) {
-      setBuilderOpen(false);
-      setEditingBlock(null);
-      setEditingItemUid(null);
-      setInsertTarget(null);
-    }
   }
 
   function addSnippet(snippetId: string, target = insertTarget) {
@@ -368,7 +383,13 @@ export function StudioApp({
       return;
     }
     setItems((prev) => {
-      const added = { uid: uid(snippetId), snippetId, ref: nextRef(prev) };
+      const added = {
+        uid: uid(snippetId),
+        snippetId,
+        ref: nextRef(prev),
+        colors: [...theme.colors],
+      };
+      setSelectedItemUid(added.uid);
       setCollectionLayout((layout) =>
         insertCollectionItem(
           normalizeCollectionLayout(
@@ -503,7 +524,7 @@ export function StudioApp({
     if (res === "saved") toast.success("Project saved");
   }
 
-  const tab = (id: "builder" | "library", label: string, Icon: typeof Hammer) => (
+  const tab = (id: "builder" | "library" | "preview", label: string, Icon: typeof Hammer) => (
     <button
       type="button"
       onClick={() => switchView(id)}
@@ -536,26 +557,10 @@ export function StudioApp({
               role="group"
               aria-label="Workspace view"
             >
-              {tab("builder", "Builder", Hammer)}
               {tab("library", "Library", Library)}
+              {tab("builder", "Builder", Hammer)}
+              {tab("preview", "Preview", Eye)}
             </div>
-            <button
-              onClick={togglePreview}
-              disabled={!items.length}
-              className="inline-flex h-8 w-[104px] shrink-0 grow-0 items-center justify-center whitespace-nowrap rounded-sm border border-border px-2.5 text-center text-sm font-medium leading-none disabled:opacity-40"
-            >
-              {preview ? "Hide preview" : "Preview"}
-            </button>
-            {view === "builder" ? (
-              <button
-                type="button"
-                onClick={saveTemplate}
-                disabled={!items.length}
-                className="flex h-8 items-center gap-1.5 whitespace-nowrap rounded-sm border border-border bg-background px-3 text-sm font-medium hover:bg-accent disabled:opacity-40"
-              >
-                <Save className="size-4" /> Save
-              </button>
-            ) : null}
             <div className="ml-auto flex items-center gap-2">
               <span className="text-[13px] text-muted-foreground">
                 {items.length} block{items.length === 1 ? "" : "s"}
@@ -573,11 +578,22 @@ export function StudioApp({
         </header>
 
         <div className="flex min-h-0 flex-1">
-          {panelOpen ? (
-            <div className="w-[300px] shrink-0">
-              <StudioPanel
-                view={view}
-                categories={categories}
+          {(() => {
+            const normalizedLayout = normalizeCollectionLayout(
+              collectionLayout,
+              items.map((it) => it.uid),
+            );
+            const selectedRow = selectedItemUid
+              ? normalizedLayout.rows.find((r) =>
+                  r.columns.some((col) => col.includes(selectedItemUid)),
+                )
+              : null;
+
+            return panelOpen ? (
+              <div className="w-[300px] shrink-0">
+                <StudioPanel
+                  view={view}
+                  categories={categories}
                 onCategory={scrollToCategory}
                 categoryCounts={categoryCounts}
                 activeCategory={activeCategory}
@@ -585,15 +601,47 @@ export function StudioApp({
                 onThemeChange={setTheme}
                 onOpenProject={() => void openProject()}
                 onSaveProject={() => void saveProject()}
+                onSaveTemplate={saveTemplate}
+                onCopyAll={() => void copyAll()}
+                copiedAll={copiedAll}
                 {...(onExportStandalone
                   ? { onExport: () => void onExportStandalone(snapshot) }
                   : {})}
                 {...(openLabel ? { openLabel } : {})}
                 {...(saveLabel ? { saveLabel } : {})}
                 onTogglePanel={() => setPanelOpen(false)}
+                items={items}
+                customBlocks={customBlocks}
+                savedFragments={savedFragments}
+                selectedItemUid={selectedItemUid}
+                onSelectItemUid={setSelectedItemUid}
+                onUpdateItem={(updated) =>
+                  setItems((prev) => prev.map((it) => (it.uid === updated.uid ? updated : it)))
+                }
+                onRemoveItem={(uid) => {
+                  setItems((prev) => prev.filter((it) => it.uid !== uid));
+                  if (selectedItemUid === uid) setSelectedItemUid(null);
+                }}
+                onResetItemOps={(uid) =>
+                  setItems((prev) =>
+                    prev.map((it) => (it.uid === uid ? { ...it, ops: [] } : it)),
+                  )
+                }
+                rowColumnCount={selectedRow?.columns.length}
+                onRowColumnCountChange={(count) => {
+                  if (!selectedRow) return;
+                  setCollectionLayout({
+                    rows: normalizedLayout.rows.map((candidate) =>
+                      candidate.id === selectedRow.id
+                        ? setRowColumnCount(candidate, count)
+                        : candidate,
+                    ),
+                  });
+                }}
               />
             </div>
-          ) : null}
+          ) : null;
+          })()}
 
           {!panelOpen ? (
             <div className="shrink-0 border-r border-border bg-card/40 px-2 py-4">
@@ -673,12 +721,17 @@ export function StudioApp({
                   theme={theme}
                   customBlocks={customBlocks}
                   savedFragments={savedFragments}
+                  selectedItemUid={selectedItemUid}
+                  onSelectItem={(uid) => {
+                    setSelectedItemUid(uid);
+                    if (!panelOpen) setPanelOpen(true);
+                  }}
                   onSaveBlock={(html, label) => {
                     setSavedFragments((prev) => [...prev, { id: uid("block"), name: label, html }]);
                     toast.success("Block saved to My blocks");
                   }}
                   collapseVersion={collapseVersion}
-                  collapseTo={preview}
+                  collapseTo={false}
                   onEditBlock={openLayoutEditor}
                   activeId={activeDragId}
                   onInsertForColumn={(row, column) => {
@@ -735,7 +788,12 @@ export function StudioApp({
                           ].map((option) => (
                             <DropdownMenuItem
                               key={option.id}
-                              onSelect={() => addSnippet(option.id, { row, column, position })}
+                              onSelect={() => {
+                                addSnippet(option.id, { row, column, position });
+                              }}
+                              onClick={() => {
+                                addSnippet(option.id, { row, column, position });
+                              }}
                             >
                               <Plus className="mr-2 size-3.5" />
                               {option.label}
@@ -747,19 +805,129 @@ export function StudioApp({
                     </div>
                   )}
                 />
+              </div>
+            ) : view === "preview" ? (
+              <div className="mx-auto w-full space-y-4">
+                {items.length === 0 ? (
+                  <div className="rounded-sm border border-dashed border-border bg-card/40 p-12 text-center text-muted-foreground">
+                    <p className="text-base font-semibold text-foreground">
+                      No blocks in preview yet
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Add blocks from the Library or Builder to preview.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => switchView("library")}
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+                    >
+                      <Library className="size-3.5" /> Open Library
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(() => {
+                      const normalized = normalizeCollectionLayout(
+                        collectionLayout,
+                        items.map((it) => it.uid),
+                      );
+                      const byId = new Map(items.map((it) => [it.uid, it]));
 
-                {preview && items.length ? (
-                  <EditablePreview
-                    html={collectionHtml(
-                      items,
-                      collectionLayout,
-                      theme,
-                      customBlocks,
-                      savedFragments,
-                      true,
-                    )}
-                  />
-                ) : null}
+                      return normalized.rows.map((row) => {
+                        if (row.columns.length === 1) {
+                          return (row.columns[0] ?? []).map((uid) => {
+                            const item = byId.get(uid);
+                            if (!item) return null;
+                            const html = itemHtml(item, theme, customBlocks, savedFragments);
+                            const isCopied = copiedBlockUid === item.uid;
+                            return (
+                              <div
+                                key={item.uid}
+                                className="group relative rounded-sm"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const ok = await copyText(html);
+                                    if (ok) {
+                                      setCopiedBlockUid(item.uid);
+                                      setTimeout(() => {
+                                        setCopiedBlockUid((curr) => (curr === item.uid ? null : curr));
+                                      }, 1500);
+                                    }
+                                  }}
+                                  title="Copy block HTML"
+                                  className={cn(
+                                    "absolute top-2 right-2 z-20 flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-xs font-medium shadow-xs backdrop-blur-xs transition-all",
+                                    isCopied
+                                      ? "opacity-100 border-primary bg-primary text-primary-foreground"
+                                      : "opacity-0 group-hover:opacity-100 border-border bg-background/90 text-foreground hover:bg-accent",
+                                  )}
+                                >
+                                  {isCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                                  <span>{isCopied ? "Copied" : "Copy"}</span>
+                                </button>
+                                <EditablePreview html={html} />
+                              </div>
+                            );
+                          });
+                        }
+
+                        // Multi-column row layout in preview
+                        return (
+                          <div
+                            key={row.id}
+                            className="collection-row grid items-start gap-2"
+                            data-columns={row.columns.length}
+                          >
+                            {row.columns.map((column, colIdx) => (
+                              <div key={`${row.id}-${colIdx}`} className="grid min-w-0 content-start gap-2">
+                                {column.map((uid) => {
+                                  const item = byId.get(uid);
+                                  if (!item) return null;
+                                  const html = itemHtml(item, theme, customBlocks, savedFragments);
+                                  const isCopied = copiedBlockUid === item.uid;
+                                  return (
+                                    <div
+                                      key={item.uid}
+                                      className="group relative rounded-sm"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          const ok = await copyText(html);
+                                          if (ok) {
+                                            setCopiedBlockUid(item.uid);
+                                            setTimeout(() => {
+                                              setCopiedBlockUid((curr) => (curr === item.uid ? null : curr));
+                                            }, 1500);
+                                          }
+                                        }}
+                                        title="Copy block HTML"
+                                        className={cn(
+                                          "absolute top-2 right-2 z-20 flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-xs font-medium shadow-xs backdrop-blur-xs transition-all",
+                                          isCopied
+                                            ? "opacity-100 border-primary bg-primary text-primary-foreground"
+                                            : "opacity-0 group-hover:opacity-100 border-border bg-background/90 text-foreground hover:bg-accent",
+                                        )}
+                                      >
+                                        {isCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                                        <span>{isCopied ? "Copied" : "Copy"}</span>
+                                      </button>
+                                      <EditablePreview html={html} />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-8">
@@ -769,91 +937,115 @@ export function StudioApp({
                     id={`category-${group.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                     className="scroll-mt-4"
                   >
-                    <h2 className="mb-3 border-b border-border pb-2 text-base font-semibold">
-                      {group.name}
+                    <h2 className="mb-3 flex items-center gap-2 border-b border-border pb-2 text-base font-semibold">
+                      {group.name === "Favorites" && (
+                        <Star className="size-4 fill-amber-400 text-amber-500" />
+                      )}
+                      <span>{group.name}</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        ({group.entries.length})
+                      </span>
                     </h2>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      {group.entries.map((e) => (
-                        <SnippetCard
-                          key={e.id}
-                          id={e.id}
-                          label={e.label}
-                          html={
-                            "template" in e
-                              ? blockHtmlWithRefs(
-                                  (templates.find((t) => `tpl:${t.id}` === e.id)?.items ??
-                                    []) as BuilderItem[],
-                                  theme,
-                                  customBlocks,
-                                  savedFragments,
-                                )
-                              : baseHtml(e.id, theme, undefined, customBlocks, savedFragments)
-                          }
-                          favorite={favorites.includes(e.id)}
-                          onToggleFavorite={toggleFavorite}
-                          onAdd={addSnippet}
-                          {...("catalog" in e && e.catalog ? { catalog: e.catalog } : {})}
-                          {...("template" in e
-                            ? {
-                                tag: "Saved",
-                                onEdit: editTemplate,
-                                onDelete: (id: string) =>
-                                  setTemplates((prev) => prev.filter((t) => `tpl:${t.id}` !== id)),
-                              }
-                            : {})}
-                          {...("fragment" in e
-                            ? {
-                                tag: "Step",
-                                onDelete: (id: string) =>
-                                  setSavedFragments((prev) =>
-                                    prev.filter(
-                                      (fragment) => `${FRAGMENT_PREFIX}${fragment.id}` !== id,
+                    {group.name === "Favorites" && group.entries.length === 0 ? (
+                      <div className="rounded-sm border border-dashed border-border bg-card/40 p-6 text-center text-muted-foreground">
+                        <Star className="mx-auto mb-2 size-5 text-muted-foreground/60" />
+                        <p className="text-sm font-medium text-foreground">
+                          No favorite blocks yet
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Click the star icon on any block below to save it here for quick access.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {group.entries.map((e) => (
+                          <SnippetCard
+                            key={`${group.name}-${e.id}`}
+                            id={e.id}
+                            label={e.label}
+                            html={
+                              "template" in e
+                                ? blockHtmlWithRefs(
+                                    (templates.find((t) => `tpl:${t.id}` === e.id)?.items ??
+                                      []) as BuilderItem[],
+                                    DEFAULT_THEME,
+                                    customBlocks,
+                                    savedFragments,
+                                  )
+                                : baseHtml(e.id, theme, undefined, customBlocks, savedFragments)
+                            }
+                            favorite={favorites.includes(e.id)}
+                            onToggleFavorite={toggleFavorite}
+                            onAdd={addSnippet}
+                            {...("catalog" in e && e.catalog ? { catalog: e.catalog } : {})}
+                            {...("template" in e
+                              ? {
+                                  tag: "Saved",
+                                  onEdit: editTemplate,
+                                  onDelete: (id: string) =>
+                                    setTemplates((prev) =>
+                                      prev.filter((t) => `tpl:${t.id}` !== id),
                                     ),
-                                  ),
-                              }
-                            : {})}
-                          {...("custom" in e
-                            ? {
-                                onDelete: (id: string) =>
-                                  setCustomBlocks((prev) =>
-                                    prev.filter((b) => `${CUSTOM_PREFIX}${b.id}` !== id),
-                                  ),
-                                onEdit: (id: string) => {
-                                  const block = findCustom(id);
-                                  if (block) {
-                                    setEditingBlock(block);
-                                    setEditingItemUid(null);
-                                    const lastRow = Math.max(0, collectionLayout.rows.length - 1);
-                                    const lastColumn = Math.max(
-                                      0,
-                                      (collectionLayout.rows[lastRow]?.columns.length ?? 1) - 1,
-                                    );
-                                    const position =
-                                      collectionLayout.rows[lastRow]?.columns[lastColumn]?.length ??
-                                      0;
-                                    setInsertTarget({ row: lastRow, column: lastColumn, position });
-                                    setBuilderOpen(true);
-                                    switchView("builder");
-                                  }
-                                },
-                                onDuplicate: (id: string) => {
-                                  const block = findCustom(id);
-                                  if (block)
-                                    setCustomBlocks((prev) => [
-                                      ...prev,
-                                      {
-                                        ...block,
-                                        id: uid("blk"),
-                                        label: `${block.label} copy`,
-                                        parts: block.parts.map((p) => ({ ...p })),
-                                      },
-                                    ]);
-                                },
-                              }
-                            : {})}
-                        />
-                      ))}
-                    </div>
+                                }
+                              : {})}
+                            {...("fragment" in e
+                              ? {
+                                  tag: "Step",
+                                  onDelete: (id: string) =>
+                                    setSavedFragments((prev) =>
+                                      prev.filter(
+                                        (fragment) => `${FRAGMENT_PREFIX}${fragment.id}` !== id,
+                                      ),
+                                    ),
+                                }
+                              : {})}
+                            {...("custom" in e
+                              ? {
+                                  onDelete: (id: string) =>
+                                    setCustomBlocks((prev) =>
+                                      prev.filter((b) => `${CUSTOM_PREFIX}${b.id}` !== id),
+                                    ),
+                                  onEdit: (id: string) => {
+                                    const block = findCustom(id);
+                                    if (block) {
+                                      setEditingBlock(block);
+                                      setEditingItemUid(null);
+                                      const lastRow = Math.max(0, collectionLayout.rows.length - 1);
+                                      const lastColumn = Math.max(
+                                        0,
+                                        (collectionLayout.rows[lastRow]?.columns.length ?? 1) - 1,
+                                      );
+                                      const position =
+                                        collectionLayout.rows[lastRow]?.columns[lastColumn]
+                                          ?.length ?? 0;
+                                      setInsertTarget({
+                                        row: lastRow,
+                                        column: lastColumn,
+                                        position,
+                                      });
+                                      setBuilderOpen(true);
+                                      switchView("builder");
+                                    }
+                                  },
+                                  onDuplicate: (id: string) => {
+                                    const block = findCustom(id);
+                                    if (block)
+                                      setCustomBlocks((prev) => [
+                                        ...prev,
+                                        {
+                                          ...block,
+                                          id: uid("blk"),
+                                          label: `${block.label} copy`,
+                                          parts: block.parts.map((p) => ({ ...p })),
+                                        },
+                                      ]);
+                                  },
+                                }
+                              : {})}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </section>
                 ))}
               </div>

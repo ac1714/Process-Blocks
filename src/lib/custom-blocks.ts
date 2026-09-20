@@ -221,10 +221,14 @@ function part(p: Palette, item: CustomPart, last: boolean, ctx: Ctx): string {
       const toneHex = TONES[o.tone ?? "info"];
       const tp = toneHex ? buildPalette(toneHex) : p;
       const title = o.tone === "success" ? "Tip" : o.tone === "warning" ? "Heads up" : "Note";
-      return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;background-color:${tp.bg};border:1px solid ${tp.border};border-radius:${RADIUS};margin:0 0 ${mb} 0;">
+      const calloutBg = ctx.dark ? "rgba(255,255,255,0.08)" : tp.bg;
+      const calloutBorder = ctx.dark ? "rgba(255,255,255,0.18)" : tp.border;
+      const calloutTitleColor = ctx.dark ? p.bgStrong : tp.text;
+      const calloutBodyColor = ctx.dark ? "#f8fafc" : INK;
+      return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:separate;background-color:${calloutBg};border:1px solid ${calloutBorder};border-radius:${RADIUS};margin:0 0 ${mb} 0;">
   <tr><td style="padding:16px 18px;">
-    <div style="${LABEL}color:${tp.text};margin:0 0 6px 0;">${title}</div>
-    <div style="${body(INK)}">Add the point you want learners to remember.</div>
+    <div style="${LABEL}color:${calloutTitleColor};margin:0 0 6px 0;">${title}</div>
+    <div style="${body(calloutBodyColor)}">Add the point you want learners to remember.</div>
   </td></tr>
 </table>`;
     }
@@ -255,7 +259,11 @@ const PADDINGS: Record<PaddingStyle, string> = {
   roomy: "26px",
 };
 
-export function renderCustomBlock(block: CustomBlock, studio: Palette): string {
+export function renderCustomBlock(
+  block: CustomBlock,
+  studio: Palette,
+  darkBg = "#0f172a",
+): string {
   const p = block.accent ? buildPalette(block.accent) : studio;
   const background = block.background ?? "white";
   const dark = background === "dark";
@@ -286,13 +294,13 @@ export function renderCustomBlock(block: CustomBlock, studio: Palette): string {
     })
     .join("\n");
 
-  const surface = dark ? "#0f172a" : background === "tint" ? p.bg : "#ffffff";
+  const surface = dark ? darkBg : background === "tint" ? p.bg : "#ffffff";
   const borderStyle = block.border ?? "hairline";
   const borderCss =
     borderStyle === "none"
       ? ""
       : borderStyle === "bold"
-        ? `border:2px solid ${dark ? "rgba(255,255,255,0.18)" : p.border};`
+        ? `border:2px solid ${dark ? "rgba(255,255,255,0.18)" : p.base};`
         : `border:1px solid ${dark ? "rgba(255,255,255,0.14)" : HAIRLINE};`;
 
   const wrap = (extra: string, rows: string) =>

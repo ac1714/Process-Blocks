@@ -79,7 +79,9 @@ export function baseHtml(
   const [primary, alt] = buildPalettes(colors ?? theme.colors);
   if (snippetId.startsWith(CUSTOM_PREFIX)) {
     const block = customBlocks.find((b) => `${CUSTOM_PREFIX}${b.id}` === snippetId);
-    return block ? applyTheme(renderCustomBlock(block, primary), theme) : "";
+    if (!block) return "";
+    const p = block.accent ? buildPalettes([block.accent])[0] : primary;
+    return renderCustomBlock(block, p, "#0f172a");
   }
   if (snippetId.startsWith(FRAGMENT_PREFIX)) {
     return (
@@ -92,7 +94,7 @@ export function baseHtml(
   return applyTheme(snippet.render(primary, alt), theme);
 }
 
-export function itemHtml(
+export function itemBaseHtml(
   item: BuilderItem,
   theme: Theme,
   customBlocks: CustomBlock[],
@@ -102,7 +104,22 @@ export function itemHtml(
     baseHtml(item.snippetId, theme, item.colors, customBlocks, savedFragments),
     item.ops,
   );
-  return applyBlockAppearance(applyLayout(edited, item.layout), item.appearance, item.colors?.[0]);
+  return applyLayout(edited, item.layout);
+}
+
+export function itemHtml(
+  item: BuilderItem,
+  theme: Theme,
+  customBlocks: CustomBlock[],
+  savedFragments: { id: string; html: string }[] = [],
+): string {
+  const base = itemBaseHtml(item, theme, customBlocks, savedFragments);
+  return applyBlockAppearance(
+    base,
+    item.appearance,
+    item.colors?.[0] ?? theme.colors[0],
+    theme.darkBg,
+  );
 }
 
 /** The block content before any column arrangement, used by the layout editor. */

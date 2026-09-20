@@ -57,7 +57,7 @@ export const EXTRA_SNIPPETS: Snippet[] = [
       const row = (number: string, heading: string, copy: string, last: boolean) =>
         `<tr><td width="76" valign="top" style="font-size:30px;line-height:1;font-weight:700;color:${p.base};border-right:3px solid ${p.base};padding:${last ? "16px 0 0" : "16px 0"};">${number}</td><td valign="top" style="padding:${last ? "16px 0 0 20px" : "16px 0 16px 20px"};${last ? "" : `border-bottom:1px solid ${LINE};`}">${title(heading)}${body(copy)}</td></tr>`;
       return table(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;padding:8px 18px 18px;`,
         row("01", "Prepare", "Review the goal and gather what you need.", false) +
           row("02", "Practice", "Work through the action with guidance.", false) +
           row("03", "Apply", "Complete the task and confirm the result.", true),
@@ -93,7 +93,7 @@ export const EXTRA_SNIPPETS: Snippet[] = [
     description: "A centered title held by two strong accent bars.",
     render: (p) =>
       table(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;`,
         `<tr><td width="12" style="background:${p.base};"></td><td style="padding:18px 24px;text-align:center;">${title("A focused section title")}</td><td width="12" style="background:${p.base};"></td></tr>`,
       ),
   },
@@ -137,7 +137,7 @@ export const EXTRA_SNIPPETS: Snippet[] = [
     description: "Three equal visual placeholders with one caption.",
     render: (p) =>
       table(
-        "",
+        `background:#ffffff;border:1px solid ${LINE};border-radius:6px;padding:16px;`,
         `<tr>${["Example 1", "Example 2", "Example 3"].map((text, i) => `<td width="33%" style="padding:${i === 1 ? "0 7px" : "0"};"><div style="height:88px;background:${i === 1 ? p.bgStrong : p.bg};border:1px solid ${p.border};text-align:center;line-height:88px;font-size:14px;font-weight:700;color:${p.text};">${text}</div></td>`).join("")}</tr><tr><td colspan="3" style="padding-top:11px;font-size:15px;line-height:1.55;color:${BODY};">Add one caption that explains what learners should compare.</td></tr>`,
       ),
   },

@@ -13,12 +13,15 @@ export const BRAND_NAMES = [
 
 export type BrandName = (typeof BRAND_NAMES)[number];
 
-const ICONIFY = "https://api.iconify.design";
+const GILBARBARA = "https://cdn.jsdelivr.net/gh/gilbarbara/logos@main/logos";
+const SIMPLE_ICONS = "https://cdn.jsdelivr.net/npm/simple-icons/icons";
 
 /**
  * One specification per brand mark. This is the single source of truth for
  * every place a logo is drawn: library examples, the Build Block picker,
  * copied HTML, and the standalone export.
+ *
+ * External available sources are hosted on global CDNs (jsdelivr & logotyp).
  *
  * - `vb` is the source artwork viewBox.
  * - `trim` is the painted area inside that viewBox, measured from the real
@@ -37,34 +40,35 @@ type BrandSpec = {
 const FULL = { x: 0, y: 0, w: 1, h: 1 };
 
 const SPECS: Record<BrandName, BrandSpec> = {
-  Zendesk: { src: `${ICONIFY}/logos:zendesk-icon.svg`, vb: [256, 195], trim: FULL, height: 19 },
-  Slack: { src: `${ICONIFY}/logos:slack-icon.svg`, vb: [256, 256], trim: FULL, height: 21 },
-  Jira: { src: `${ICONIFY}/logos:jira.svg`, vb: [256, 256], trim: FULL, height: 21 },
-  Confluence: { src: `${ICONIFY}/logos:confluence.svg`, vb: [256, 246], trim: FULL, height: 21 },
-  Gmail: { src: `${ICONIFY}/logos:google-gmail.svg`, vb: [256, 204], trim: FULL, height: 17 },
+  Zendesk: { src: `${GILBARBARA}/zendesk-icon.svg`, vb: [256, 195], trim: FULL, height: 19 },
+  Slack: { src: `${GILBARBARA}/slack-icon.svg`, vb: [256, 256], trim: FULL, height: 21 },
+  Jira: { src: `${GILBARBARA}/jira.svg`, vb: [256, 256], trim: FULL, height: 21 },
+  Confluence: { src: `${GILBARBARA}/confluence.svg`, vb: [256, 246], trim: FULL, height: 21 },
+  Gmail: { src: `${GILBARBARA}/google-gmail.svg`, vb: [256, 204], trim: FULL, height: 17 },
   "Google Meet": {
-    src: `${ICONIFY}/logos:google-meet.svg`,
+    src: `${GILBARBARA}/google-meet.svg`,
     vb: [256, 201],
     trim: FULL,
     height: 22,
   },
   "Google Drive": {
-    src: `${ICONIFY}/logos:google-drive.svg`,
+    src: `${GILBARBARA}/google-drive.svg`,
     vb: [256, 238],
     trim: FULL,
     height: 19,
   },
   "Google Sheets": {
-    src: `${ICONIFY}/simple-icons:googlesheets.svg?color=%23188038`,
+    src: `${SIMPLE_ICONS}/googlesheets.svg`,
     vb: [24, 24],
     trim: { x: 0.1375, y: 0, w: 0.7292, h: 1 },
     height: 24,
   },
   Salesforce: {
-    src: `${ICONIFY}/simple-icons:salesforce.svg?color=%2300A1E0`,
+    // Official Salesforce cloud mark without words, rendered in brand blue #00A1E0
+    src: "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20fill%3D%22%2300A1E0%22%20d%3D%22M10.006%205.415a4.195%204.195%200%20013.045-1.306c1.56%200%202.954.9%203.69%202.205.63-.3%201.35-.45%202.1-.45%202.85%200%205.159%202.34%205.159%205.22s-2.31%205.22-5.176%205.22c-.345%200-.69-.044-1.02-.104a3.75%203.75%200%2001-3.3%201.95c-.6%200-1.155-.15-1.65-.375A4.314%204.314%200%20018.88%2020.4a4.302%204.302%200%2001-4.05-2.82c-.27.062-.54.076-.825.076-2.204%200-4.005-1.8-4.005-4.05%200-1.5.811-2.805%202.01-3.51-.255-.57-.39-1.2-.39-1.846%200-2.58%202.1-4.65%204.65-4.65%201.53%200%202.85.705%203.72%201.8%22%2F%3E%3C%2Fsvg%3E",
     vb: [24, 24],
-    trim: { x: 0, y: 0.15, w: 1, h: 0.7 },
-    height: 16,
+    trim: { x: 0, y: 0.1712, w: 1, h: 0.6788 },
+    height: 18,
   },
   Workato: {
     src: "https://logotyp.us/file/workato.svg",
@@ -103,8 +107,8 @@ export const BRAND_MARK_LINE = Math.max(...BRAND_NAMES.map((brand) => brandMarkS
  * left edge of the glyph is the left edge of the element.
  */
 export function brandLogoHtml(brand: BrandName, scale = 1): string {
-  const spec = SPECS[brand];
-  const { width, height } = brandMarkSize(brand, scale);
+  const spec = SPECS[brand] ?? SPECS["Zendesk"];
+  const { width, height } = brandMarkSize(brand in SPECS ? brand : "Zendesk", scale);
   const imageHeight = Math.round((spec.height * scale) / spec.trim.h);
   const imageWidth = Math.round((imageHeight * spec.vb[0]) / spec.vb[1]);
   const offsetX = Math.round(imageWidth * spec.trim.x);
@@ -113,8 +117,7 @@ export function brandLogoHtml(brand: BrandName, scale = 1): string {
     `<span role="img" aria-label="${brand}" data-brand-mark="${brand}"` +
     ` style="display:inline-block;overflow:hidden;width:${width}px;height:${height}px;` +
     `line-height:0;background:transparent;border:0;box-shadow:none;">` +
-    `<img src="${spec.src}" alt="" width="${imageWidth}" height="${imageHeight}"` +
-    ` onerror="this.style.visibility='hidden'"` +
+    `<img src="${spec.src}" alt="" width="${imageWidth}" height="${imageHeight}" loading="eager" decoding="sync"` +
     ` style="display:block;width:${imageWidth}px;height:${imageHeight}px;` +
     `max-width:none;max-height:none;min-width:0;min-height:0;` +
     `margin:-${offsetY}px 0 0 -${offsetX}px;background:transparent;border:0;` +

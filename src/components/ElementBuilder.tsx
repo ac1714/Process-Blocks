@@ -250,7 +250,7 @@ export function ElementBuilder({
     };
   }, [variant]);
   const [primary] = buildPalettes(theme.colors);
-  const html = applyTheme(renderCustomBlock(block, primary), theme);
+  const html = applyTheme(renderCustomBlock(block, primary, theme.darkBg), theme);
   const parts = block.parts;
   const addTextOp = (op: Op) =>
     setBlock((current) => ({ ...current, ops: [...(current.ops ?? []), op] }));

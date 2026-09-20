@@ -83,6 +83,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "description",
         content: "Build documents from copy-ready HTML blocks with a numbered block stack.",
       },
+      { property: "og:title", content: "Block Studio" },
+      {
+        property: "og:description",
+        content: "Build documents from copy-ready HTML blocks with a numbered block stack.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
