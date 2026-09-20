@@ -146,7 +146,7 @@ export function StudioPanel({
   rowColumnCount?: number;
   onRowColumnCountChange?: (count: number) => void;
 }) {
-  const [panelTabOverride, setPanelTabOverride] = useState<"block" | "global" | "categories" | null>(null);
+  const [panelTabOverride, setPanelTabOverride] = useState<"block" | "global" | "categories" | "preview-blocks" | "preview-theme" | null>(null);
   const [copiedUid, setCopiedUid] = useState<string | null>(null);
 
   // Clear tab override when switching views or selecting a block
@@ -157,7 +157,7 @@ export function StudioPanel({
   // Defaults based on active mode
   const activeTab =
     panelTabOverride ??
-    (view === "library" ? "categories" : view === "builder" ? "block" : "global");
+    (view === "library" ? "categories" : view === "builder" ? "block" : "preview-blocks");
 
   const selectedItem = items.find((it) => it.uid === selectedItemUid);
 
@@ -209,7 +209,7 @@ export function StudioPanel({
               )}
             >
               <Sliders className="size-4" />
-              <span>Block</span>
+              <span>Blocks</span>
             </button>
           )}
           {view === "library" && (
@@ -226,6 +226,36 @@ export function StudioPanel({
               <LayoutGrid className="size-4" />
               <span>Categories</span>
             </button>
+          )}
+          {view === "preview" && (
+            <>
+              <button
+                type="button"
+                onClick={() => setPanelTabOverride("preview-blocks")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors",
+                  activeTab === "preview-blocks"
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Sliders className="size-4" />
+                <span>Blocks</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPanelTabOverride("preview-theme")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors",
+                  activeTab === "preview-theme"
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Paintbrush className="size-4" />
+                <span>Theme</span>
+              </button>
+            </>
           )}
           {view !== "preview" && (
             <button
@@ -250,23 +280,6 @@ export function StudioPanel({
       {view === "builder" && activeTab === "block" ? (
         selectedItem ? (
           <div className="space-y-3.5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                  Selected Block
-                </p>
-                <h3 className="text-sm font-semibold truncate max-w-[180px]">
-                  {blockLabel(selectedItem.snippetId, customBlocks, savedFragments)}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => onSelectItemUid?.(null)}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                Deselect
-              </button>
-            </div>
 
             {/* Individual Block Theme & Color Customization */}
             <div className="space-y-3">
@@ -473,8 +486,8 @@ export function StudioPanel({
             ))}
           </div>
         </Section>
-      ) : view === "preview" ? (
-        /* 3. PREVIEW: Copy blocks list + Global Style options (font & density only) without extra dividers */
+      ) : view === "preview" && activeTab === "preview-blocks" ? (
+        /* 3a. PREVIEW – Blocks tab: Copy blocks list */
         <div className="space-y-4">
           <Section label="Copy Blocks">
             {onCopyAll && (
@@ -521,56 +534,56 @@ export function StudioPanel({
               </div>
             )}
           </Section>
-
-          {/* Preview Global Style Options: Font & Density only - no divider line above */}
-          <Section label="Global Styles">
-            <div className="grid gap-3 pt-1">
-              <div className="grid gap-1.5">
-                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                  Font
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {FONT_PRESETS.map((font) => (
-                    <button
-                      key={font.name}
-                      type="button"
-                      onClick={() => onThemeChange({ ...theme, fontStack: font.stack })}
-                      className={cn(
-                        "rounded-sm border px-2 py-1.5 text-xs font-medium",
-                        theme.fontStack === font.stack
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-card hover:bg-accent",
-                      )}
-                    >
-                      {font.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid gap-1.5">
-                <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                  Density
-                </p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(["compact", "comfortable"] as const).map((density) => (
-                    <button
-                      key={density}
-                      type="button"
-                      onClick={() => onThemeChange({ ...theme, density })}
-                      className={cn(
-                        "rounded-sm border px-3 py-1.5 text-sm font-medium capitalize",
-                        theme.density === density
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border bg-card hover:bg-accent",
-                      )}
-                    >
-                      {density}
-                    </button>
-                  ))}
-                </div>
+        </div>
+      ) : view === "preview" && activeTab === "preview-theme" ? (
+        /* 3b. PREVIEW – Theme tab: Global Style options (font & density) */
+        <div className="space-y-4">
+          <div className="grid gap-3 pt-1">
+            <div className="grid gap-1.5">
+              <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                Font
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {FONT_PRESETS.map((font) => (
+                  <button
+                    key={font.name}
+                    type="button"
+                    onClick={() => onThemeChange({ ...theme, fontStack: font.stack })}
+                    className={cn(
+                      "rounded-sm border px-3 py-2 text-sm font-medium",
+                      theme.fontStack === font.stack
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-card hover:bg-accent",
+                    )}
+                  >
+                    {font.name}
+                  </button>
+                ))}
               </div>
             </div>
-          </Section>
+            <div className="grid gap-1.5">
+              <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                Density
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(["compact", "comfortable"] as const).map((density) => (
+                  <button
+                    key={density}
+                    type="button"
+                    onClick={() => onThemeChange({ ...theme, density })}
+                    className={cn(
+                      "rounded-sm border px-3 py-2 text-sm font-medium capitalize",
+                      theme.density === density
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-card hover:bg-accent",
+                    )}
+                  >
+                    {density}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         /* 4. GLOBAL THEME SETTINGS (Clean: no top lines, no wasted headers) */

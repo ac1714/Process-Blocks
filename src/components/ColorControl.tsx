@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ArrowLeftRight, Check, RotateCcw } from "lucide-react";
 
-import { deriveAccents, normalizeHex } from "@/lib/snippet-colors";
+import { adjustLightness, deriveAccents, normalizeHex } from "@/lib/snippet-colors";
 import { DARK_BG_PRESETS, DEFAULT_DARK_BG } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -64,7 +64,7 @@ export function ColorControl({
   const ROLE_NAMES = ["Primary", "Accent 2", "Accent 3", "Accent 4"];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-visible">
       {/* THEMES */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
@@ -119,7 +119,7 @@ export function ColorControl({
       </div>
 
       {/* COLORS */}
-      <div className="space-y-2">
+      <div className={cn("space-y-2", activeEditingIndex !== null && "pb-36")}>
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             COLORS
@@ -150,7 +150,7 @@ export function ColorControl({
             const roleName = ROLE_NAMES[index] || `Accent ${index + 1}`;
             const isEditing = activeEditingIndex === index;
             return (
-              <div key={index} className="relative flex-1">
+              <div key={index} className="relative flex-1" style={{ overflow: "visible" }}>
                 <button
                   type="button"
                   onClick={() => setActiveEditingIndex(isEditing ? null : index)}
@@ -166,7 +166,10 @@ export function ColorControl({
 
                 {/* Inline Popover Editor */}
                 {isEditing && (
-                  <div className="absolute top-full left-0 z-30 mt-1 w-48 rounded-sm border border-border bg-popover p-2 shadow-lg">
+                  <div className={cn(
+                    "absolute top-full z-50 mt-1 w-48 rounded-sm border border-border bg-popover p-2 shadow-lg",
+                    index >= 2 ? "right-0" : "left-0",
+                  )}>
                     <div className="flex items-center justify-between pb-1.5 text-xs font-semibold text-muted-foreground">
                       <span>Pick {roleName}</span>
                       <button
@@ -188,7 +191,7 @@ export function ColorControl({
                           }}
                           className="absolute inset-0 size-full cursor-pointer opacity-0"
                         />
-                        <span className="size-full" style={{ backgroundColor: color }} />
+                        <span className="block size-full" style={{ backgroundColor: color }} />
                       </div>
                       <input
                         type="text"
@@ -268,7 +271,7 @@ export function ColorControl({
                         onChange={(e) => onDarkBgChange(e.target.value)}
                         className="absolute inset-0 size-full cursor-pointer opacity-0"
                       />
-                      <span className="size-full" style={{ backgroundColor: darkBg }} />
+                      <span className="block size-full" style={{ backgroundColor: darkBg }} />
                     </div>
                     <input
                       type="text"
